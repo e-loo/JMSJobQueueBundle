@@ -19,23 +19,23 @@
 namespace JMS\JobQueueBundle\Command;
 
 use Doctrine\ORM\EntityManager;
-use JMS\JobQueueBundle\Entity\Repository\JobRepository;
-use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Bridge\Doctrine\ManagerRegistry;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use JMS\JobQueueBundle\Exception\LogicException;
-use JMS\JobQueueBundle\Exception\InvalidArgumentException;
-use JMS\JobQueueBundle\Event\NewOutputEvent;
-use Symfony\Component\Process\ProcessBuilder;
-use Symfony\Component\Process\Process;
 use JMS\JobQueueBundle\Entity\Job;
+use JMS\JobQueueBundle\Entity\Repository\JobRepository;
+use JMS\JobQueueBundle\Event\NewOutputEvent;
 use JMS\JobQueueBundle\Event\StateChangeEvent;
-use Symfony\Component\Console\Input\InputOption;
+use JMS\JobQueueBundle\Exception\InvalidArgumentException;
+use Symfony\Bridge\Doctrine\ManagerRegistry;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
 
 class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand
 {
+    protected static $defaultName = 'jms-job-queue:run';
+
     /** @var string */
     private $env;
 
@@ -62,7 +62,6 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
     protected function configure()
     {
         $this
-            ->setName('jms-job-queue:run')
             ->setDescription('Runs jobs from the queue.')
             ->addOption('max-runtime', 'r', InputOption::VALUE_REQUIRED, 'The maximum runtime in seconds.', 900)
             ->addOption('max-concurrent-jobs', 'j', InputOption::VALUE_REQUIRED, 'The maximum number of concurrent jobs.', 4)
@@ -75,8 +74,6 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $startTime = time();
-
-        $this->consoleFile = $this->findConsoleFile();
 
         $maxRuntime = (integer) $input->getOption('max-runtime');
         if ($maxRuntime <= 0) {
@@ -354,17 +351,15 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
         $em->persist($job);
         $em->flush($job);
 
-        $pb = $this->getCommandProcessBuilder();
-        $pb
-            ->add($job->getCommand())
-            ->add('--jms-job-id='.$job->getId())
-        ;
+        $args = $this->getBasicCommandLineArgs();
+        $args[] = $job->getCommand();
+        $args[] = '--jms-job-id='.$job->getId();
 
         foreach ($job->getArgs() as $arg) {
-            $pb->add($arg);
+            $args[] = $arg;
         }
-        
-        $proc = new Process($pb->getProcess()->getCommandLine());
+
+        $proc = new Process($args);
         $proc->start();
         $this->output->writeln(sprintf('Started %s.', $job));
 
@@ -402,16 +397,12 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
                 continue;
             }
 
-            $pb = $this->getCommandProcessBuilder();
-            $pb
-                ->add('jms-job-queue:mark-incomplete')
-                ->add($job->getId())
-                ->add('--env='.$this->env)
-                ->add('--verbose')
-            ;
+            $args = $this->getCommandLineArgs();
+            $args[] = 'jms-job-queue:mark-incomplete';
+            $args[] = $job->getId();
 
             // We use a separate process to clean up.
-            $proc = new Process($pb->getProcess()->getCommandLine());
+            $proc = new Process($args);
             if (0 !== $proc->run()) {
                 $ex = new ProcessFailedException($proc);
 
@@ -420,45 +411,19 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
         }
     }
 
-    /**
-     * @return ProcessBuilder
-     */
-    private function getCommandProcessBuilder()
+    private function getBasicCommandLineArgs(): array
     {
-        $pb = new ProcessBuilder();
-
-        // PHP wraps the process in "sh -c" by default, but we need to control
-        // the process directly.
-        if ( ! defined('PHP_WINDOWS_VERSION_MAJOR')) {
-            $pb->add('exec');
-        }
-
-        $pb
-            ->add(PHP_BINARY)
-            ->add($this->consoleFile)
-            ->add('--env='.$this->env)
-        ;
+        $args = array(
+            PHP_BINARY,
+            $_SERVER['argv'][0],
+            '--env='.$this->env
+        );
 
         if ($this->verbose) {
-            $pb->add('--verbose');
+            $args[] = '--verbose';
         }
 
-        return $pb;
-    }
-
-    private function findConsoleFile()
-    {
-        $kernelDir = $this->getContainer()->getParameter('kernel.root_dir');
-
-        if (file_exists($kernelDir.'/console')) {
-            return $kernelDir.'/console';
-        }
-
-        if (file_exists($kernelDir.'/../bin/console')) {
-            return $kernelDir.'/../bin/console';
-        }
-
-        throw new \RuntimeException('Could not locate console file.');
+        return $args;
     }
 
     /**
