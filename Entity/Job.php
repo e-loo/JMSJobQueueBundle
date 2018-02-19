@@ -122,7 +122,7 @@ class Job
     /** @ORM\Column(type = "string") */
     private $command;
 
-    /** @ORM\Column(type = "json") */
+    /** @ORM\Column(type = "json_array") */
     private $args;
 
     /**
