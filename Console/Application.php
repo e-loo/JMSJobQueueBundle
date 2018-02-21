@@ -30,11 +30,8 @@ class Application extends BaseApplication
 
         $this->getDefinition()->addOption(new InputOption('--jms-job-id', null, InputOption::VALUE_REQUIRED, 'The ID of the Job.'));
 
-        $kernel->boot();
-        if ($kernel->getContainer()->getParameter('jms_job_queue.statistics')) {
-            $this->insertStatStmt = "INSERT INTO jms_job_statistics (job_id, characteristic, createdAt, charValue) VALUES (:jobId, :name, :createdAt, :value)";
-            register_tick_function(array($this, 'onTick'));
-        }
+        $this->insertStatStmt = "INSERT INTO jms_job_statistics (job_id, characteristic, createdAt, charValue) VALUES (:jobId, :name, :createdAt, :value)";
+        register_tick_function(array($this, 'onTick'));
     }
 
     public function doRun(InputInterface $input, OutputInterface $output)
