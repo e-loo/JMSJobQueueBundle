@@ -78,11 +78,6 @@ class RunCommand extends Command
         $this->queueOptions = $queueOptions;
     }
 
-    public function __construct()
-    {
-        parent::__construct(self::$defaultName);
-    }
-
     protected function configure()
     {
         $this
