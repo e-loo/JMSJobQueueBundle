@@ -78,11 +78,6 @@ class RunCommand extends Command
         $this->queueOptions = $queueOptions;
     }
 
-    public function __construct()
-    {
-        parent::__construct(self::$defaultName);
-    }
-
     protected function configure()
     {
         $this
@@ -95,7 +90,7 @@ class RunCommand extends Command
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $startTime = time();
 
@@ -154,6 +149,8 @@ class RunCommand extends Command
             $this->queueOptionsDefault,
             $this->queueOptions
         );
+
+        return 0;
     }
 
     private function runJobs($workerName, $startTime, $maxRuntime, $idleTime, $maxJobs, array $restrictedQueues, array $queueOptionsDefaults, array $queueOptions)
@@ -288,13 +285,13 @@ class RunCommand extends Command
 
             if ( ! empty($newOutput)) {
                 $event = new NewOutputEvent($data['job'], $newOutput, NewOutputEvent::TYPE_STDOUT);
-                $this->dispatcher->dispatch('jms_job_queue.new_job_output', $event);
+                $this->dispatcher->dispatch($event, 'jms_job_queue.new_job_output');
                 $newOutput = $event->getNewOutput();
             }
 
             if ( ! empty($newErrorOutput)) {
                 $event = new NewOutputEvent($data['job'], $newErrorOutput, NewOutputEvent::TYPE_STDERR);
-                $this->dispatcher->dispatch('jms_job_queue.new_job_output', $event);
+                $this->dispatcher->dispatch($event, 'jms_job_queue.new_job_output');
                 $newErrorOutput = $event->getNewOutput();
             }
 
@@ -355,7 +352,7 @@ class RunCommand extends Command
     private function startJob(Job $job)
     {
         $event = new StateChangeEvent($job, Job::STATE_RUNNING);
-        $this->dispatcher->dispatch('jms_job_queue.job_state_change', $event);
+        $this->dispatcher->dispatch($event, 'jms_job_queue.job_state_change');
         $newState = $event->getNewState();
 
         if (Job::STATE_CANCELED === $newState) {
