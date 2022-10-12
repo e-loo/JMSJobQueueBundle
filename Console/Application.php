@@ -102,6 +102,6 @@ class Application extends BaseApplication
 
     private function getConnection()
     {
-        return $this->getKernel()->getContainer()->get('doctrine')->getManagerForClass('JMSJobQueueBundle:Job')->getConnection();
+        return $this->getKernel()->getContainer()->get('doctrine')->getManagerForClass('JMS\JobQueueBundle\Entity\Job')->getConnection();
     }
 }

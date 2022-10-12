@@ -268,7 +268,7 @@ class JobManagerTest extends BaseTestCase
         $this->assertEquals('terminated', $a->getState());
 
         $this->em->clear();
-        $reloadedA = $this->em->find('JMSJobQueueBundle:Job', $a->getId());
+        $reloadedA = $this->em->find('JMS\JobQueueBundle\Entity\Job', $a->getId());
         $this->assertCount(2, $reloadedA->getRetryJobs());
     }
 
@@ -292,7 +292,7 @@ class JobManagerTest extends BaseTestCase
         $this->em->clear();
         $this->assertNotSame($defEm, $this->em);
 
-        $reloadedJ = $this->em->find('JMSJobQueueBundle:Job', $j->getId());
+        $reloadedJ = $this->em->find('JMS\JobQueueBundle\Entity\Job', $j->getId());
 
         $reloadedWagon = $reloadedJ->findRelatedEntity('JMS\JobQueueBundle\Tests\Functional\TestBundle\Entity\Wagon');
         $reloadedWagon->state = 'broken';

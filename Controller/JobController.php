@@ -20,7 +20,7 @@ use Twig\Environment;
 class JobController
 {
     public function __construct(private JobManager $jobManager,
-                                private ManagerRegistry $managerRegistry, 
+                                private ManagerRegistry $managerRegistry,
                                 private Environment $twig,
                                 private RouterInterface $router,
                                 private bool $enableStats)
@@ -32,7 +32,7 @@ class JobController
         $jobFilter = JobFilter::fromRequest($request);
 
         $qb = $this->getEm()->createQueryBuilder();
-        $qb->select('j')->from('JMSJobQueueBundle:Job', 'j')
+        $qb->select('j')->from('JMS\JobQueueBundle\Entity\Job', 'j')
             ->where($qb->expr()->isNull('j.originalJob'))
             ->orderBy('j.id', 'desc');
 
