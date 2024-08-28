@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\Expr\ClosureExpressionVisitor;
+use Doctrine\Common\Collections\Order;
 use Doctrine\Common\Collections\Selectable;
 use Doctrine\ORM\EntityManagerInterface;
 use JMS\JobQueueBundle\Entity\Job;
@@ -33,6 +34,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      *
      * @return array<object> The PHP array representation of this collection.
      */
+    #[\ReturnTypeWillChange]
     public function toArray()
     {
         $this->initialize();
@@ -46,6 +48,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      *
      * @return object|false
      */
+    #[\ReturnTypeWillChange]
     public function first()
     {
         $this->initialize();
@@ -53,6 +56,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
         return reset($this->entities);
     }
 
+    #[\ReturnTypeWillChange]
     public function findFirst(Closure $p)
     {
         foreach ($this->elements as $key => $element) {
@@ -64,6 +68,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
         return null;
     }
 
+    #[\ReturnTypeWillChange]
     public function reduce(Closure $func, mixed $initial = null)
     {
         return array_reduce($this->elements, $func, $initial);
@@ -76,6 +81,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      *
      * @return object|false
      */
+    #[\ReturnTypeWillChange]
     public function last()
     {
         $this->initialize();
@@ -88,6 +94,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      *
      * @return string|integer
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         $this->initialize();
@@ -100,6 +107,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      *
      * @return object|false
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         $this->initialize();
@@ -112,6 +120,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      *
      * @return object|false
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         $this->initialize();
@@ -360,7 +369,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      * @param Closure $func
      * @return Collection
      */
-    public function map(Closure $func)
+    public function map(Closure $func): Collection
     {
         $this->initialize();
 
@@ -374,7 +383,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      * @param Closure $p The predicate used for filtering.
      * @return Collection A collection with the results of the filter operation.
      */
-    public function filter(Closure $p)
+    public function filter(Closure $p): Collection
     {
         $this->initialize();
 
@@ -388,7 +397,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      * @param Closure $p The predicate.
      * @return boolean TRUE, if the predicate yields TRUE for all elements, FALSE otherwise.
      */
-    public function forAll(Closure $p)
+    public function forAll(Closure $p): bool
     {
         $this->initialize();
 
@@ -410,7 +419,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      *               of elements where the predicate returned TRUE, the second element
      *               contains the collection of elements where the predicate returned FALSE.
      */
-    public function partition(Closure $p)
+    public function partition(Closure $p): array
     {
         $this->initialize();
 
@@ -438,7 +447,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
     /**
      * Clears the collection.
      */
-    public function clear()
+    public function clear(): void
     {
         throw new \LogicException('clear() is not supported.');
     }
@@ -454,7 +463,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      * @param int $length
      * @return array
      */
-    public function slice($offset, $length = null)
+    public function slice($offset, $length = null): array
     {
         $this->initialize();
 
@@ -468,7 +477,7 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
      * @param  Criteria $criteria
      * @return Collection
      */
-    public function matching(Criteria $criteria)
+    public function matching(Criteria $criteria): Collection
     {
         $this->initialize();
 
@@ -481,7 +490,8 @@ class PersistentRelatedEntitiesCollection implements Collection, Selectable, \St
             $filtered = array_filter($filtered, $filter);
         }
 
-        if (null !== $orderings = $criteria->getOrderings()) {
+        $orderings = array_map(static fn (Order $ordering): string => $ordering->value, $criteria->orderings());
+        if (0 !== count($orderings)) {
             $next = null;
             foreach (array_reverse($orderings) as $field => $ordering) {
                 $next = ClosureExpressionVisitor::sortByField($field, $ordering == 'DESC' ? -1 : 1, $next);

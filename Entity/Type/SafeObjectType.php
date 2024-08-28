@@ -6,7 +6,7 @@ use Doctrine\DBAL\Types\JsonType;
 
 class SafeObjectType extends JsonType
 {
-    public function getSQLDeclaration(array $column, \Doctrine\DBAL\Platforms\AbstractPlatform $platform)
+    public function getSQLDeclaration(array $column, \Doctrine\DBAL\Platforms\AbstractPlatform $platform): string
     {
         return $platform->getBlobTypeDeclarationSQL($column);
     }
