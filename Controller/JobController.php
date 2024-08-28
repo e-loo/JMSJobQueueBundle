@@ -3,29 +3,30 @@
 namespace JMS\JobQueueBundle\Controller;
 
 use Doctrine\Common\Util\ClassUtils;
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 use JMS\JobQueueBundle\Entity\Job;
 use JMS\JobQueueBundle\Entity\Repository\JobManager;
 use JMS\JobQueueBundle\View\JobFilter;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
-class JobController extends Controller
+class JobController extends AbstractController
 {
-    #[\Symfony\Component\Routing\Attribute\Route(path: '/', name: 'jms_jobs_overview')]
-    public function overviewAction(Request $request)
+    #[Route(path: '/', name: 'jms_jobs_overview')]
+    public function overviewAction(JobManager $jobRepository, EntityManagerInterface $em, Request $request)
     {
         $jobFilter = JobFilter::fromRequest($request);
 
-        $qb = $this->getEm()->createQueryBuilder();
-        $qb->select('j')->from('JMSJobQueueBundle:Job', 'j')
+        $qb = $em->createQueryBuilder();
+        $qb->select('j')->from(Job::class, 'j')
             ->where($qb->expr()->isNull('j.originalJob'))
             ->orderBy('j.id', 'desc');
 
-        $lastJobsWithError = $jobFilter->isDefaultPage() ? $this->getRepo()->findLastJobsWithError(5) : [];
+        $lastJobsWithError = $jobFilter->isDefaultPage() ? $jobRepository->findLastJobsWithError(5) : [];
         foreach ($lastJobsWithError as $i => $job) {
             $qb->andWhere($qb->expr()->neq('j.id', '?'.$i));
             $qb->setParameter($i, $job->getId());
@@ -55,19 +56,19 @@ class JobController extends Controller
         return $this->render('@JMSJobQueue/Job/overview.html.twig', ['jobsWithError' => $lastJobsWithError, 'jobs' => array_slice($jobs, 0, $perPage), 'jobFilter' => $jobFilter, 'hasMore' => count($jobs) > $perPage, 'jobStates' => Job::getStates()]);
     }
 
-    #[\Symfony\Component\Routing\Attribute\Route(path: '/{id}', name: 'jms_jobs_details')]
-    public function detailsAction(Job $job)
+    #[Route(path: '/{id}', name: 'jms_jobs_details')]
+    public function detailsAction(EntityManagerInterface $em, JobManager $jobRepository, Job $job)
     {
         $relatedEntities = [];
         foreach ($job->getRelatedEntities() as $entity) {
             $class = ClassUtils::getClass($entity);
-            $relatedEntities[] = ['class' => $class, 'id' => json_encode($this->get('doctrine')->getManagerForClass($class)->getClassMetadata($class)->getIdentifierValues($entity)), 'raw' => $entity];
+            $relatedEntities[] = ['class' => $class, 'id' => json_encode($em->getClassMetadata($class)->getIdentifierValues($entity)), 'raw' => $entity];
         }
 
         $statisticData = $statisticOptions = [];
         if ($this->getParameter('jms_job_queue.statistics')) {
             $dataPerCharacteristic = [];
-            foreach ($this->get('doctrine')->getManagerForClass(Job::class)->getConnection()->query("SELECT * FROM jms_job_statistics WHERE job_id = ".$job->getId()) as $row) {
+            foreach ($em->getConnection()->query("SELECT * FROM jms_job_statistics WHERE job_id = ".$job->getId()) as $row) {
                 $dataPerCharacteristic[$row['characteristic']][] = [
                     // hack because postgresql lower-cases all column names.
                     array_key_exists('createdAt', $row) ? $row['createdAt'] : $row['createdat'],
@@ -99,11 +100,11 @@ class JobController extends Controller
             }
         }
 
-        return $this->render('@JMSJobQueue/Job/details.html.twig', ['job' => $job, 'relatedEntities' => $relatedEntities, 'incomingDependencies' => $this->getRepo()->getIncomingDependencies($job), 'statisticData' => $statisticData, 'statisticOptions' => $statisticOptions]);
+        return $this->render('@JMSJobQueue/Job/details.html.twig', ['job' => $job, 'relatedEntities' => $relatedEntities, 'incomingDependencies' => $jobRepository->getIncomingDependencies($job), 'statisticData' => $statisticData, 'statisticOptions' => $statisticOptions]);
     }
 
-    #[\Symfony\Component\Routing\Attribute\Route(path: '/{id}/retry', name: 'jms_jobs_retry_job')]
-    public function retryJobAction(Job $job)
+    #[Route(path: '/{id}/retry', name: 'jms_jobs_retry_job')]
+    public function retryJobAction(EntityManagerInterface $em, Job $job)
     {
         $state = $job->getState();
 
@@ -117,21 +118,11 @@ class JobController extends Controller
 
         $retryJob = clone $job;
 
-        $this->getEm()->persist($retryJob);
-        $this->getEm()->flush();
+        $em->persist($retryJob);
+        $em->flush();
 
         $url = $this->generateUrl('jms_jobs_details', ['id' => $retryJob->getId()]);
 
-        return new RedirectResponse($url, \Symfony\Component\HttpFoundation\Response::HTTP_CREATED);
-    }
-
-    private function getEm(): EntityManager
-    {
-        return $this->get('doctrine')->getManagerForClass(Job::class);
-    }
-
-    private function getRepo(): JobManager
-    {
-        return $this->get('jms_job_queue.job_manager');
+        return new RedirectResponse($url, Response::HTTP_CREATED);
     }
 }
