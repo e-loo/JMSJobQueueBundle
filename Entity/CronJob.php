@@ -15,12 +15,13 @@ class CronJob
     #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
     private $id;
 
-    #[ORM\Column(type: \Doctrine\DBAL\Types\Types::DATETIME_MUTABLE, name: 'lastRunAt')]
+    #[ORM\Column(name: 'lastRunAt', type: \Doctrine\DBAL\Types\Types::DATETIME_MUTABLE)]
     private \DateTime $lastRunAt;
 
-    public function __construct(#[ORM\Column(type: \Doctrine\DBAL\Types\Types::STRING, length: 200, unique: true)]
-    private $command)
-    {
+    public function __construct(
+        #[ORM\Column(type: \Doctrine\DBAL\Types\Types::STRING, length: 200, unique: true)]
+        private $command
+    ) {
         $this->lastRunAt = new \DateTime();
     }
 
@@ -32,5 +33,13 @@ class CronJob
     public function getLastRunAt()
     {
         return $this->lastRunAt;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getId()
+    {
+        return $this->id;
     }
 }
