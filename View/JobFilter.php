@@ -10,7 +10,7 @@ class JobFilter
     public $command;
     public $state;
 
-    public static function fromRequest(Request $request)
+    public static function fromRequest(Request $request): self
     {
         $filter = new self();
         $filter->page = $request->query->getInt('page', 1);
@@ -20,17 +20,13 @@ class JobFilter
         return $filter;
     }
 
-    public function isDefaultPage()
+    public function isDefaultPage(): bool
     {
         return $this->page === 1 && empty($this->command) && empty($this->state);
     }
 
-    public function toArray()
+    public function toArray(): array
     {
-        return array(
-            'page' => $this->page,
-            'command' => $this->command,
-            'state' => $this->state,
-        );
+        return ['page' => $this->page, 'command' => $this->command, 'state' => $this->state];
     }
 }

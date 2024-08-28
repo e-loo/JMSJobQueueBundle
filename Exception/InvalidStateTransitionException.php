@@ -22,14 +22,14 @@ use JMS\JobQueueBundle\Entity\Job;
 
 class InvalidStateTransitionException extends \InvalidArgumentException
 {
-    private $job;
+    private readonly \JMS\JobQueueBundle\Entity\Job $job;
     private $newState;
-    private $allowedStates;
+    private readonly array $allowedStates;
 
-    public function __construct(Job $job, $newState, array $allowedStates = array())
+    public function __construct(Job $job, $newState, array $allowedStates = [])
     {
         $msg = sprintf('The Job(id = %d) cannot change from "%s" to "%s". Allowed transitions: ', $job->getId(), $job->getState(), $newState);
-        $msg .= count($allowedStates) > 0 ? '"'.implode('", "', $allowedStates).'"' : '#none#';
+        $msg .= $allowedStates !== [] ? '"'.implode('", "', $allowedStates).'"' : '#none#';
         parent::__construct($msg);
 
         $this->job = $job;

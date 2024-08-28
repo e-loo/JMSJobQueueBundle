@@ -8,10 +8,10 @@ use Symfony\Component\DependencyInjection\Reference;
 
 class LinkGeneratorsPass implements CompilerPassInterface
 {
-    public function process(ContainerBuilder $container)
+    public function process(ContainerBuilder $container): void
     {
-        $generators = array();
-        foreach ($container->findTaggedServiceIds('jms_job_queue.link_generator') as $id => $attrs) {
+        $generators = [];
+        foreach (array_keys($container->findTaggedServiceIds('jms_job_queue.link_generator')) as $id) {
             $generators[] = new Reference($id);
         }
 

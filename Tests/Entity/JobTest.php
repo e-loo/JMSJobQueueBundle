@@ -23,35 +23,33 @@ use PHPUnit\Framework\TestCase;
 
 class JobTest extends TestCase
 {
-    public function testConstruct()
+    public function testConstruct(): \JMS\JobQueueBundle\Entity\Job
     {
-        $job = new Job('a:b', array('a', 'b', 'c'));
+        $job = new Job('a:b', ['a', 'b', 'c']);
 
-        $this->assertEquals('a:b', $job->getCommand());
-        $this->assertEquals(array('a', 'b', 'c'), $job->getArgs());
+        $this->assertSame('a:b', $job->getCommand());
+        $this->assertSame(['a', 'b', 'c'], $job->getArgs());
         $this->assertNotNull($job->getCreatedAt());
-        $this->assertEquals('pending', $job->getState());
+        $this->assertSame('pending', $job->getState());
         $this->assertNull($job->getStartedAt());
 
         return $job;
     }
 
     /**
-     * @depends testConstruct
      * @expectedException JMS\JobQueueBundle\Exception\InvalidStateTransitionException
      */
-    public function testInvalidTransition(Job $job)
+    #[\PHPUnit\Framework\Attributes\Depends('testConstruct')]
+    public function testInvalidTransition(Job $job): void
     {
         $job->setState('failed');
     }
 
-    /**
-     * @depends testConstruct
-     */
-    public function testStateToRunning(Job $job)
+    #[\PHPUnit\Framework\Attributes\Depends('testConstruct')]
+    public function testStateToRunning(Job $job): Job
     {
         $job->setState('running');
-        $this->assertEquals('running', $job->getState());
+        $this->assertSame('running', $job->getState());
         $this->assertNotNull($startedAt = $job->getStartedAt());
         $job->setState('running');
         $this->assertSame($startedAt, $job->getStartedAt());
@@ -59,80 +57,74 @@ class JobTest extends TestCase
         return $job;
     }
 
-    /**
-     * @depends testStateToRunning
-     */
-    public function testStateToFailed(Job $job)
+    #[\PHPUnit\Framework\Attributes\Depends('testStateToRunning')]
+    public function testStateToFailed(Job $job): void
     {
         $job = clone $job;
         $job->setState('running');
         $job->setState('failed');
-        $this->assertEquals('failed', $job->getState());
+        $this->assertSame('failed', $job->getState());
     }
 
-    /**
-     * @depends testStateToRunning
-     */
-    public function testStateToTerminated(Job $job)
+    #[\PHPUnit\Framework\Attributes\Depends('testStateToRunning')]
+    public function testStateToTerminated(Job $job): void
     {
         $job = clone $job;
         $job->setState('running');
         $job->setState('terminated');
-        $this->assertEquals('terminated', $job->getState());
+        $this->assertSame('terminated', $job->getState());
     }
 
-    /**
-     * @depends testStateToRunning
-     */
-    public function testStateToFinished(Job $job)
+    #[\PHPUnit\Framework\Attributes\Depends('testStateToRunning')]
+    public function testStateToFinished(Job $job): void
     {
         $job = clone $job;
         $job->setState('running');
         $job->setState('finished');
-        $this->assertEquals('finished', $job->getState());
+        $this->assertSame('finished', $job->getState());
     }
 
-    public function testAddOutput()
+    public function testAddOutput(): void
     {
         $job = new Job('foo');
         $this->assertNull($job->getOutput());
         $job->addOutput('foo');
-        $this->assertEquals('foo', $job->getOutput());
+        $this->assertSame('foo', $job->getOutput());
         $job->addOutput('bar');
-        $this->assertEquals('foobar', $job->getOutput());
+        $this->assertSame('foobar', $job->getOutput());
     }
 
-    public function testAddErrorOutput()
+    public function testAddErrorOutput(): void
     {
         $job = new Job('foo');
         $this->assertNull($job->getErrorOutput());
         $job->addErrorOutput('foo');
-        $this->assertEquals('foo', $job->getErrorOutput());
+        $this->assertSame('foo', $job->getErrorOutput());
         $job->addErrorOutput('bar');
-        $this->assertEquals('foobar', $job->getErrorOutput());
+        $this->assertSame('foobar', $job->getErrorOutput());
     }
 
-    public function testSetOutput()
+    public function testSetOutput(): void
     {
         $job = new Job('foo');
         $this->assertNull($job->getOutput());
         $job->setOutput('foo');
-        $this->assertEquals('foo', $job->getOutput());
+        $this->assertSame('foo', $job->getOutput());
         $job->setOutput('bar');
-        $this->assertEquals('bar', $job->getOutput());
+        $this->assertSame('bar', $job->getOutput());
     }
 
-    public function testSetErrorOutput()
+    public function testSetErrorOutput(): void
     {
         $job = new Job('foo');
         $this->assertNull($job->getErrorOutput());
         $job->setErrorOutput('foo');
-        $this->assertEquals('foo', $job->getErrorOutput());
+        $this->assertSame('foo', $job->getErrorOutput());
         $job->setErrorOutput('bar');
-        $this->assertEquals('bar', $job->getErrorOutput());
+        $this->assertSame('bar', $job->getErrorOutput());
     }
 
-    public function testAddDependency()
+    public function testAddDependency(): void
     {
         $a = new Job('a');
         $b = new Job('b');
@@ -149,7 +141,7 @@ class JobTest extends TestCase
      * @expectedException \LogicException
      * @expectedExceptionMessage You cannot add dependencies to a job which might have been started already.
      */
-    public function testAddDependencyToRunningJob()
+    public function testAddDependencyToRunningJob(): void
     {
         $job = new Job('a');
         $job->setState(Job::STATE_RUNNING);
@@ -157,7 +149,7 @@ class JobTest extends TestCase
         $job->addDependency(new Job('b'));
     }
 
-    public function testAddRetryJob()
+    public function testAddRetryJob(): \JMS\JobQueueBundle\Entity\Job
     {
         $a = new Job('a');
         $a->setState(Job::STATE_RUNNING);
@@ -170,25 +162,21 @@ class JobTest extends TestCase
         return $a;
     }
 
-    /**
-     * @depends testAddRetryJob
-     */
-    public function testIsRetryJob(Job $a)
+    #[\PHPUnit\Framework\Attributes\Depends('testAddRetryJob')]
+    public function testIsRetryJob(Job $a): void
     {
         $this->assertFalse($a->isRetryJob());
         $this->assertTrue($a->getRetryJobs()->get(0)->isRetryJob());
     }
 
-    /**
-     * @depends testAddRetryJob
-     */
-    public function testGetOriginalJob(Job $a)
+    #[\PHPUnit\Framework\Attributes\Depends('testAddRetryJob')]
+    public function testGetOriginalJob(Job $a): void
     {
         $this->assertSame($a, $a->getOriginalJob());
         $this->assertSame($a, $a->getRetryJobs()->get(0)->getOriginalJob());
     }
 
-    public function testCheckedAt()
+    public function testCheckedAt(): void
     {
         $job = new Job('a');
         $this->assertNull($job->getCheckedAt());
@@ -201,7 +189,7 @@ class JobTest extends TestCase
         $this->assertNotSame($checkedAtA, $checkedAtB);
     }
 
-    public function testSameDependencyIsNotAddedTwice()
+    public function testSameDependencyIsNotAddedTwice(): void
     {
         $a = new Job('a');
         $b = new Job('b');
@@ -213,7 +201,7 @@ class JobTest extends TestCase
         $this->assertCount(1, $a->getDependencies());
     }
 
-    public function testHasDependency()
+    public function testHasDependency(): void
     {
         $a = new Job('a');
         $b = new Job('b');
@@ -223,7 +211,7 @@ class JobTest extends TestCase
         $this->assertTrue($a->hasDependency($b));
     }
 
-    public function testIsRetryAllowed()
+    public function testIsRetryAllowed(): void
     {
         $job = new Job('a');
         $this->assertFalse($job->isRetryAllowed());
@@ -237,15 +225,15 @@ class JobTest extends TestCase
         $this->assertFalse($job->isRetryAllowed());
     }
 
-    public function testCloneDoesNotChangeQueue()
+    public function testCloneDoesNotChangeQueue(): void
     {
-        $job = new Job('a', array(), true, 'foo');
+        $job = new Job('a', [], true, 'foo');
         $clonedJob = clone $job;
 
-        $this->assertEquals('foo', $clonedJob->getQueue());
+        $this->assertSame('foo', $clonedJob->getQueue());
     }
 
-    private function setField($obj, $field, $value)
+    private function setField(\JMS\JobQueueBundle\Entity\Job $obj, string $field, int $value): void
     {
         $ref = new \ReflectionProperty($obj, $field);
         $ref->setAccessible(true);

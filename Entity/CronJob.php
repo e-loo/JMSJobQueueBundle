@@ -2,27 +2,25 @@
 
 namespace JMS\JobQueueBundle\Entity;
 
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity
- * @ORM\Table(name = "jms_cron_jobs")
- * @ORM\ChangeTrackingPolicy("DEFERRED_EXPLICIT")
- */
+#[ORM\Entity]
+#[ORM\ChangeTrackingPolicy('DEFERRED_EXPLICIT')]
+#[ORM\Table(name: 'jms_cron_jobs')]
 class CronJob
 {
-    /** @ORM\Id @ORM\Column(type = "integer", options = {"unsigned": true}) @ORM\GeneratedValue(strategy="AUTO") */
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'AUTO')]
+    #[ORM\Column(type: Types::BIGINT, options: ['unsigned' => true])]
     private $id;
 
-    /** @ORM\Column(type = "string", length = 200, unique = true) */
-    private $command;
+    #[ORM\Column(type: \Doctrine\DBAL\Types\Types::DATETIME_MUTABLE, name: 'lastRunAt')]
+    private \DateTime $lastRunAt;
 
-    /** @ORM\Column(type = "datetime", name = "lastRunAt") */
-    private $lastRunAt;
-
-    public function __construct($command)
+    public function __construct(#[ORM\Column(type: \Doctrine\DBAL\Types\Types::STRING, length: 200, unique: true)]
+    private $command)
     {
-        $this->command = $command;
         $this->lastRunAt = new \DateTime();
     }
 

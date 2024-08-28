@@ -37,18 +37,18 @@ class JMSJobQueueExtension extends Extension implements PrependExtensionInterfac
     /**
      * {@inheritDoc}
      */
-    public function load(array $configs, ContainerBuilder $container)
+    public function load(array $configs, ContainerBuilder $container): void
     {
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
-        $loader->load('services.xml');
-        $loader->load('console.xml');
+        $loader = new Loader\PhpFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
+        $loader->load('services.php');
+        $loader->load('console.php');
 
         $container->setParameter('jms_job_queue.statistics', $config['statistics']);
         if ($config['statistics']) {
-            $loader->load('statistics.xml');
+            $loader->load('statistics.php');
         }
 
         $container->registerForAutoconfiguration(JobScheduler::class)
@@ -60,16 +60,8 @@ class JMSJobQueueExtension extends Extension implements PrependExtensionInterfac
         $container->setParameter('jms_job_queue.queue_options', $config['queue_options']);
     }
 
-    public function prepend(ContainerBuilder $container)
+    public function prepend(ContainerBuilder $container): void
     {
-        $container->prependExtensionConfig('doctrine', array(
-            'dbal' => array(
-                'types' => array(
-                    'jms_job_safe_object' => array(
-                        'class' => SafeObjectType::class,
-                    )
-                )
-            )
-        ));
+        $container->prependExtensionConfig('doctrine', ['dbal' => ['types' => ['jms_job_safe_object' => ['class' => SafeObjectType::class]]]]);
     }
 }

@@ -23,11 +23,8 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 abstract class JobEvent extends Event
 {
-    private $job;
-
-    public function __construct(Job $job)
+    public function __construct(private readonly Job $job)
     {
-        $this->job = $job;
     }
 
     public function getJob()
