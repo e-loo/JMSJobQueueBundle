@@ -2,9 +2,9 @@
 
 namespace JMS\JobQueueBundle\Entity\Type;
 
-use Doctrine\DBAL\Types\JsonType;
+use Doctrine\DBAL\Types\ObjectType;
 
-class SafeObjectType extends JsonType
+class SafeObjectType extends ObjectType
 {
     public function getSQLDeclaration(array $column, \Doctrine\DBAL\Platforms\AbstractPlatform $platform): string
     {
