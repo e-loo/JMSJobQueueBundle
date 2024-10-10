@@ -166,7 +166,7 @@ class Job implements \Stringable
      *
      * It is effectively a many-to-any association.
      */
-    private \Doctrine\Common\Collections\ArrayCollection $relatedEntities;
+    private \Doctrine\Common\Collections\Collection $relatedEntities;
 
     public static function create($command, array $args = [], $confirmed = true, $queue = self::DEFAULT_QUEUE, $priority = self::PRIORITY_DEFAULT): self
     {
