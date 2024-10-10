@@ -111,10 +111,15 @@ class CleanUpCommand extends Command
                     throw $exception;
                 }
 
-                $this->entityManager->transactional(function() use ($job): void {
+                $this->entityManager->beginTransaction();
+                try {
                     $this->resolveDependencies($job);
                     $this->entityManager->remove($job);
-                });
+                    $this->entityManager->commit();
+                } catch(\Throwable $exception) {
+                    $this->entityManager->rollback();
+                    throw $exception;
+                }
 
                 continue;
             }
