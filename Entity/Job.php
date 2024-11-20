@@ -19,6 +19,7 @@
 namespace JMS\JobQueueBundle\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use JMS\JobQueueBundle\Exception\InvalidStateTransitionException;
@@ -122,9 +123,9 @@ class Job implements \Stringable
     #[ORM\Column(type: Types::DATETIME_MUTABLE, name: 'closedAt', nullable: true)]
     private ?\DateTime $closedAt = null;
 
-    #[ORM\ManyToMany(targetEntity: \Job::class, fetch: 'EAGER')]
+    #[ORM\ManyToMany(targetEntity: self::class, fetch: 'EAGER')]
     #[ORM\JoinTable(name: 'jms_job_dependencies', joinColumns: [new ORM\JoinColumn(name: 'source_job_id', referencedColumnName: 'id')], inverseJoinColumns: [new ORM\JoinColumn(name: 'dest_job_id', referencedColumnName: 'id')])]
-    private \Doctrine\Common\Collections\Collection $dependencies;
+    private Collection $dependencies;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $output = null;
@@ -141,15 +142,15 @@ class Job implements \Stringable
     #[ORM\Column(type: Types::SMALLINT, name: 'maxRetries', options: ['unsigned' => true])]
     private int $maxRetries = 0;
 
-    #[ORM\ManyToOne(targetEntity: \Job::class, inversedBy: 'retryJobs')]
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'retryJobs')]
     #[ORM\JoinColumn(name: 'originalJob_id', referencedColumnName: 'id')]
-    private ?\JMS\JobQueueBundle\Entity\Job $originalJob = null;
+    private ?self $originalJob = null;
 
-    #[ORM\OneToMany(targetEntity: \Job::class, mappedBy: 'originalJob', cascade: ['persist', 'remove', 'detach', 'refresh'])]
-    private \Doctrine\Common\Collections\Collection $retryJobs;
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'originalJob', cascade: ['persist', 'remove', 'detach', 'refresh'])]
+    private Collection $retryJobs;
 
     #[ORM\Column(type: 'jms_job_safe_object', name: 'stackTrace', nullable: true)]
-    private ?\Symfony\Component\ErrorHandler\Exception\FlattenException $stackTrace = null;
+    private ?FlattenException $stackTrace = null;
 
     #[ORM\Column(type: Types::SMALLINT, nullable: true, options: ['unsigned' => true])]
     private ?int $runtime = null;
@@ -166,7 +167,7 @@ class Job implements \Stringable
      *
      * It is effectively a many-to-any association.
      */
-    private \Doctrine\Common\Collections\Collection $relatedEntities;
+    private Collection $relatedEntities;
 
     public static function create($command, array $args = [], $confirmed = true, $queue = self::DEFAULT_QUEUE, $priority = self::PRIORITY_DEFAULT): self
     {
@@ -502,7 +503,7 @@ class Job implements \Stringable
 
     public function getOriginalJob(): self
     {
-        if (!$this->originalJob instanceof \JMS\JobQueueBundle\Entity\Job) {
+        if (!$this->originalJob instanceof Job) {
             return $this;
         }
 
@@ -515,7 +516,7 @@ class Job implements \Stringable
             throw new \LogicException($this.' must be in state "PENDING".');
         }
 
-        if ($this->originalJob instanceof \JMS\JobQueueBundle\Entity\Job) {
+        if ($this->originalJob instanceof Job) {
             throw new \LogicException($this.' already has an original job set.');
         }
 
@@ -539,7 +540,7 @@ class Job implements \Stringable
 
     public function isRetryJob(): bool
     {
-        return $this->originalJob instanceof \JMS\JobQueueBundle\Entity\Job;
+        return $this->originalJob instanceof Job;
     }
 
     public function isRetried(): bool
@@ -570,7 +571,7 @@ class Job implements \Stringable
         $this->stackTrace = $ex;
     }
 
-    public function getStackTrace(): ?\Symfony\Component\ErrorHandler\Exception\FlattenException
+    public function getStackTrace(): ?FlattenException
     {
         return $this->stackTrace;
     }
