@@ -1,0 +1,38 @@
+<?php
+/**
+ * © Eloo <info@eloo.nl> This bundle of is a fork of the JMS Job Queue Bundle and is thus NOT part of the Trade Secret license.
+ */
+
+namespace JMS\JobQueueBundle\Tests\Functional\TestBundle\Command;
+
+use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+
+class SometimesFailingCommand extends ContainerAwareCommand
+{
+    protected function configure()
+    {
+        $this
+            ->setName('jms-job-queue:sometimes-failing-cmd')
+            ->addArgument('time', InputArgument::REQUIRED)
+        ;
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $expired = time() - $input->getArgument('time');
+
+        if ($expired <= 6) {
+            sleep(4);
+            $output->writeln(sprintf('Failed (expired: %s seconds).', $expired));
+
+            return 1;
+        }
+
+        $output->writeln('Success.');
+
+        return 0;
+    }
+}
