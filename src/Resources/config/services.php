@@ -18,24 +18,24 @@ return function (ContainerConfigurator $containerConfigurator): void {
     $parameters->set('jms_job_queue.retry_scheduler.class', ExponentialRetryScheduler::class);
     $parameters->set('jms_job_queue.job_manager.class', JobManager::class);
 
-    $defaultsConfigurator = $containerConfigurator->services()
+    $configurator = $containerConfigurator->services()
         ->defaults()
+        ->autoconfigure()
         ->autowire()
         ->private();
-    $defaultsConfigurator->defaults()->autoconfigure();
 
-    $defaultsConfigurator->set('jms_job_queue.retry_scheduler', '%jms_job_queue.retry_scheduler.class%');
+    $configurator->set('jms_job_queue.retry_scheduler', '%jms_job_queue.retry_scheduler.class%');
 
-    $defaultsConfigurator->set('jms_job_queue.entity.many_to_any_listener', '%jms_job_queue.entity.many_to_any_listener.class%')
+    $configurator->set('jms_job_queue.entity.many_to_any_listener', '%jms_job_queue.entity.many_to_any_listener.class%')
         ->args([new Reference(EntityManagerInterface::class)])
         ->tag('doctrine.event_listener', ['lazy' => true, 'event' => 'postGenerateSchema'])
         ->tag('doctrine.event_listener', ['lazy' => true, 'event' => 'postLoad'])
         ->tag('doctrine.event_listener', ['lazy' => true, 'event' => 'postPersist'])
         ->tag('doctrine.event_listener', ['lazy' => true, 'event' => 'preRemove']);
 
-    $defaultsConfigurator->set('jms_job_queue.twig.extension', '%jms_job_queue.twig.extension.class%');
+    $configurator->set('jms_job_queue.twig.extension', '%jms_job_queue.twig.extension.class%');
 
-    $defaultsConfigurator->set('jms_job_queue.job_manager', '%jms_job_queue.job_manager.class%')
+    $configurator->set('jms_job_queue.job_manager', '%jms_job_queue.job_manager.class%')
         ->public()
         ->args([
             new Reference(EntityManagerInterface::class),
