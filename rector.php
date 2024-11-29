@@ -48,7 +48,6 @@ return RectorConfig::configure()
         SymfonySetList::SYMFONY_CODE_QUALITY,
         SetList::TYPE_DECLARATION,
         SetList::INSTANCEOF,
-        SetList::NAMING,
         SetList::STRICT_BOOLEANS,
         SetList::PHP_74,
         SetList::PHP_80,

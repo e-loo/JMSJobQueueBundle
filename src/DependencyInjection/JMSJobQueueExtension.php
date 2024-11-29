@@ -21,27 +21,27 @@ use Symfony\Component\HttpKernel\DependencyInjection\Extension;
  */
 class JMSJobQueueExtension extends Extension implements PrependExtensionInterface
 {
-    public function load(array $configs, ContainerBuilder $containerBuilder): void
+    public function load(array $configs, ContainerBuilder $container): void
     {
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $phpFileLoader = new Loader\PhpFileLoader($containerBuilder, new FileLocator(__DIR__.'/../Resources/config'));
+        $phpFileLoader = new Loader\PhpFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $phpFileLoader->load('services.php');
         $phpFileLoader->load('console.php');
 
-        $containerBuilder->setParameter('jms_job_queue.statistics', $config['statistics']);
+        $container->setParameter('jms_job_queue.statistics', $config['statistics']);
         if ($config['statistics']) {
             $phpFileLoader->load('statistics.php');
         }
 
-        $containerBuilder->registerForAutoconfiguration(JobScheduler::class)
+        $container->registerForAutoconfiguration(JobScheduler::class)
             ->addTag('jms_job_queue.scheduler');
-        $containerBuilder->registerForAutoconfiguration(CronCommand::class)
+        $container->registerForAutoconfiguration(CronCommand::class)
             ->addTag('jms_job_queue.cron_command');
 
-        $containerBuilder->setParameter('jms_job_queue.queue_options_defaults', $config['queue_options_defaults']);
-        $containerBuilder->setParameter('jms_job_queue.queue_options', $config['queue_options']);
+        $container->setParameter('jms_job_queue.queue_options_defaults', $config['queue_options_defaults']);
+        $container->setParameter('jms_job_queue.queue_options', $config['queue_options']);
     }
 
     public function prepend(ContainerBuilder $containerBuilder): void
