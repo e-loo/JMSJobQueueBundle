@@ -1,6 +1,6 @@
 <?php
 /**
- * © Eloo <info@eloo.nl> This bundle of is a fork of the JMS Job Queue Bundle and is thus NOT part of the Trade Secret license.
+ * © Eloo <info@eloo.nl> This source file is subject to the Trade Secret license.
  */
 
 namespace JMS\JobQueueBundle\Console;
@@ -10,12 +10,10 @@ declare(ticks=10000000);
 use DateTime;
 use Doctrine\DBAL\Statement;
 use Doctrine\DBAL\Types\Type;
-use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use PDO;
 use Symfony\Bundle\FrameworkBundle\Console\Application as BaseApplication;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\ErrorHandler\Exception\FlattenException;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -33,9 +31,7 @@ class Application extends BaseApplication
     public function __construct(KernelInterface $kernel)
     {
         parent::__construct($kernel);
-
-        $this->getDefinition()->addOption(new InputOption('--jms-job-id', null, InputOption::VALUE_REQUIRED, 'The ID of the Job.'));
-        register_tick_function($this->onTick(...));
+        register_shutdown_function($this->onShutdown(...));
     }
 
     public function doRun(InputInterface $input, OutputInterface $output): int
@@ -54,9 +50,11 @@ class Application extends BaseApplication
         }
     }
 
-    public function onTick(): void
+    public function onShutdown(): void
     {
-        if (!$this->input->hasOption('jms-job-id') || null === $jobId = $this->input->getOption('jms-job-id')) {
+        $jobId = (int) getenv('JMS_JOB_ID');
+
+        if ($jobId <= 0) {
             return;
         }
 
@@ -78,7 +76,9 @@ class Application extends BaseApplication
 
     private function saveDebugInformation(Exception|null $exception = null): void
     {
-        if (!$this->input->hasOption('jms-job-id') || null === $jobId = $this->input->getOption('jms-job-id')) {
+        $jobId = (int) getenv('JMS_JOB_ID');
+
+        if ($jobId <= 0) {
             return;
         }
 
@@ -91,6 +91,11 @@ class Application extends BaseApplication
 
     private function getConnection()
     {
-        return $this->getKernel()->getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $doctrine = $this->getKernel()->getContainer()->get('doctrine'); // alias Doctrine\Bundle\DoctrineBundle\Registry
+
+        /** @var Doctrine\DBAL\Connection $connection */
+        $connection = $doctrine->getConnection(); // default connection
+
+        return $connection;
     }
 }

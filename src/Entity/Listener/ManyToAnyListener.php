@@ -1,6 +1,6 @@
 <?php
 /**
- * © Eloo <info@eloo.nl> This bundle of is a fork of the JMS Job Queue Bundle and is thus NOT part of the Trade Secret license.
+ * © Eloo <info@eloo.nl> This source file is subject to the Trade Secret license.
  */
 
 namespace JMS\JobQueueBundle\Entity\Listener;
@@ -11,6 +11,7 @@ use Doctrine\ORM\Event\PostLoadEventArgs;
 use Doctrine\ORM\Event\PostPersistEventArgs;
 use Doctrine\ORM\Event\PreRemoveEventArgs;
 use Doctrine\ORM\Tools\Event\GenerateSchemaEventArgs;
+use Doctrine\Persistence\ManagerRegistry;
 use JMS\JobQueueBundle\Entity\Job;
 use ReflectionProperty;
 use RuntimeException;
@@ -30,8 +31,10 @@ class ManyToAnyListener
 {
     private readonly ReflectionProperty $reflectionProperty;
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private ManagerRegistry $registry,
+    ) {
         $this->reflectionProperty = new ReflectionProperty(Job::class, 'relatedEntities');
         $this->reflectionProperty->setAccessible(true);
     }
@@ -68,6 +71,7 @@ class ManyToAnyListener
         foreach ($this->reflectionProperty->getValue($object) as $relatedEntity) {
             $relClass = ClassUtils::getClass($relatedEntity);
             $relId = $this->registry->getManagerForClass($relClass)->getMetadataFactory()->getMetadataFor($relClass)->getIdentifierValues($relatedEntity);
+
             asort($relId);
 
             if ([] === $relId) {

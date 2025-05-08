@@ -4,6 +4,7 @@
  */
 
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\ManagerRegistry;
 use JMS\JobQueueBundle\Entity\Listener\ManyToAnyListener;
 use JMS\JobQueueBundle\Entity\Repository\JobManager;
 use JMS\JobQueueBundle\Retry\ExponentialRetryScheduler;
@@ -27,7 +28,10 @@ return function (ContainerConfigurator $containerConfigurator): void {
     $configurator->set('jms_job_queue.retry_scheduler', '%jms_job_queue.retry_scheduler.class%');
 
     $configurator->set('jms_job_queue.entity.many_to_any_listener', '%jms_job_queue.entity.many_to_any_listener.class%')
-        ->args([new Reference(EntityManagerInterface::class)])
+        ->args([
+            new Reference(EntityManagerInterface::class),
+            new Reference(ManagerRegistry::class),
+        ])
         ->tag('doctrine.event_listener', ['lazy' => true, 'event' => 'postGenerateSchema'])
         ->tag('doctrine.event_listener', ['lazy' => true, 'event' => 'postLoad'])
         ->tag('doctrine.event_listener', ['lazy' => true, 'event' => 'postPersist'])

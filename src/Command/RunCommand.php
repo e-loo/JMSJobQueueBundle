@@ -1,6 +1,7 @@
 <?php
+
 /**
- * © Eloo <info@eloo.nl> This bundle of is a fork of the JMS Job Queue Bundle and is thus NOT part of the Trade Secret license.
+ * © Eloo <info@eloo.nl> This source file is subject to the Trade Secret license.
  */
 
 namespace JMS\JobQueueBundle\Command;
@@ -351,13 +352,16 @@ class RunCommand extends Command
 
         $args = $this->getBasicCommandLineArgs();
         $args[] = $job->getCommand();
-        $args[] = '--jms-job-id='.$job->getId();
 
         foreach ($job->getArgs() as $arg) {
             $args[] = $arg;
         }
 
-        $process = new Process($args);
+        $process = new Process(
+            command: $args,
+            env: ['JMS_JOB_ID'=>$job->getId()],
+        );
+
         $process->start();
         $this->style->info(sprintf('Started %s.', $job));
 
